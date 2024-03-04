@@ -7,7 +7,6 @@ import com.example.FDsystem.Repostory.UserRepo;
 import com.example.FDsystem.Service.UserService;
 import com.example.FDsystem.payloadresposne.LoginMesage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,16 +15,13 @@ public class UserIMPL implements UserService {
     @Autowired
     private UserRepo userRepo;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     @Override
     public String addUser(UserDTO userDTO) {
         User user = new User(
                 userDTO.getUserid(),
                 userDTO.getUsername(),
                 userDTO.getEmail(),
-                passwordEncoder.encode(userDTO.getPassword())
+                userDTO.getPassword() // Store password as plain text
         );
         userRepo.save(user);
         return user.getUsername();
@@ -36,9 +32,8 @@ public class UserIMPL implements UserService {
         User user = userRepo.findByEmail(loginDTO.getEmail());
         if (user != null) {
             String password = loginDTO.getPassword();
-            String encodedPassword = user.getPassword();
-            boolean isPwdRight = passwordEncoder.matches(password, encodedPassword);
-            if (isPwdRight) {
+            String storedPassword = user.getPassword(); // Retrieve stored password (plain text)
+            if (password.equals(storedPassword)) { // Compare passwords as plain text
                 return new LoginMesage("Login Success", true);
             } else {
                 return new LoginMesage("Password Not Match", false);
