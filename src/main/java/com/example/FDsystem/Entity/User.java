@@ -3,9 +3,7 @@ import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "user", schema = "")
-
-
+@Table(name="user")
 public class User {
     public int getUserid() {
         return userid;
