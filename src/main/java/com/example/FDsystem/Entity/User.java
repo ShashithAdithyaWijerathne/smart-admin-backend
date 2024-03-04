@@ -3,7 +3,8 @@ import jakarta.persistence.*;
 
 
 @Entity
-@Table(name="user")
+@Table(name = "user", generator = "none")
+
 public class User {
     public int getUserid() {
         return userid;
