@@ -17,12 +17,21 @@ public class UserIMPL implements UserService {
 
     @Override
     public String addUser(UserDTO userDTO) {
+        // Check if email already exists
+        if (userRepo.findByEmail(userDTO.getEmail()) != null) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Create a new user
         User user = new User(
                 userDTO.getUsername(),
                 userDTO.getEmail(),
                 userDTO.getPassword() // Store password as plain text
         );
+
+        // Save the user
         userRepo.save(user);
+
         return user.getUsername();
     }
 
