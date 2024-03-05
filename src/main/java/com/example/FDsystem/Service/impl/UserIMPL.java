@@ -18,7 +18,6 @@ public class UserIMPL implements UserService {
     @Override
     public String addUser(UserDTO userDTO) {
         User user = new User(
-                userDTO.getUserid(),
                 userDTO.getUsername(),
                 userDTO.getEmail(),
                 userDTO.getPassword() // Store password as plain text
