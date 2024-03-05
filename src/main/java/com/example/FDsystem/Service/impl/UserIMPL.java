@@ -42,4 +42,14 @@ public class UserIMPL implements UserService {
             return new LoginMesage("Email not exists", false);
         }
     }
+
+    @Override
+    public User findUserByEmail(String email) {
+        return userRepo.findByEmail(email);
+    }
+
+    @Override
+    public boolean validatePassword(User user, String password) {
+        return user.getPassword().equals(password);
+    }
 }
