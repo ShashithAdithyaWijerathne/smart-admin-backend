@@ -6,6 +6,8 @@ import com.example.FDsystem.Entity.User;
 import com.example.FDsystem.Service.UserService;
 import com.example.FDsystem.payloadresposne.LoginMesage;
 import com.example.FDsystem.response.AuthResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,7 +36,7 @@ public class UserController {
     }
 
     @PostMapping(path = "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> loginUser(@RequestBody LoginDTO loginDTO) {
+    public ResponseEntity<?> loginUser(@RequestBody LoginDTO loginDTO, HttpServletRequest request) {
         try {
             // Retrieve user details from the database
             User user = userService.findUserByEmail(loginDTO.getEmail());
@@ -48,14 +50,33 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized: Incorrect password");
             }
 
-            // Create expiration date 15 minutes from now
-            Date expirationDate = new Date(System.currentTimeMillis() + 15 * 60 * 1000);
+            // Get the last active time from the session or create one if it doesn't exist
+            HttpSession session = request.getSession();
+            Long lastActiveTime = (Long) session.getAttribute("lastActiveTime");
+            if (lastActiveTime == null) {
+                lastActiveTime = System.currentTimeMillis();
+                session.setAttribute("lastActiveTime", lastActiveTime);
+            }
+
+            // Check the time elapsed since the last activity
+            long currentTime = System.currentTimeMillis();
+            long elapsedTime = currentTime - lastActiveTime;
+            if (elapsedTime > 15 * 60 * 1000) { // 15 minutes
+                // If more than 15 minutes have passed since the last activity, invalidate the session
+                session.invalidate();
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Session expired due to inactivity");
+            }
+
+            // Update the last active time
+            session.setAttribute("lastActiveTime", currentTime);
+
+            // Create expiration date 15 minutes from the current time
+            Date expirationDate = new Date(currentTime + 15 * 60 * 1000);
             Date createdAt = new Date();
 
             // Format dates
-            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss:MMM:dd:yyyy");
+            SimpleDateFormat sdf = new SimpleDateFormat("dd:MMM:yyyy:HH:mm:ss");
             String createdAtFormatted = sdf.format(createdAt);
-            String expirationDateFormatted = sdf.format(expirationDate);
 
             // Create JWT token with additional claims
             String token = Jwts.builder()
@@ -63,7 +84,6 @@ public class UserController {
                     .claim("username", user.getUsername())
                     .claim("email", user.getEmail())
                     .claim("created_at", createdAtFormatted)
-                    .claim("expirationDtae",expirationDateFormatted)
                     .setIssuedAt(createdAt)
                     .setExpiration(expirationDate)
                     .signWith(SignatureAlgorithm.HS256, "smtfd")
@@ -77,4 +97,5 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error");
         }
     }
+
 }
